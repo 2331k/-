@@ -1,0 +1,305 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <queue>
+#include <algorithm>
+#include <cstdlib>
+using namespace std;
+
+
+
+void jiemian()
+{
+    system("cls");
+
+    cout << "***************************************" << endl;
+    cout << "*         欢迎进入校园导航系统        *" << endl;
+    cout << "*            1.显示邻接表图           *" << endl;
+    cout << "*            2.查询建筑信息           *" << endl;
+    cout << "*            3.显示全部建筑           *" << endl;
+    cout << "*            4.查询最短路径           *" << endl;
+    cout << "*            5.查询所有路径           *" << endl;
+    cout << "*            6.更改建筑信息           *" << endl;
+    cout << "*            0.退出导航系统           *" << endl;
+    cout << "***************************************" << endl;
+    cout << "请输入你需要操作的选项:";
+    char i;
+    cin >> i;
+    while (!(i == '1' || i == '2' || i == '3' || i == '4' || i == '5' || i == '6' || i == '0'))
+    {
+        cout << "输入错误,请重新输入:";
+        cin >> i;
+        cout << endl;
+    }
+    switch (i)
+    {
+    case '1':add(); break;
+    case '2':search(); break;
+    case '3':print(); break;
+    case'4':edit(); break;
+    case'5':Delete(); break;
+    case '0':return;
+    }
+}
+
+
+    // 节点类，表示主要建筑的信息
+    class Building {
+    public:
+        int id;
+        string name;
+        pair<int, int> coordinates; // 坐标信息 (x, y),pair<int, int> 用于表示图的边，其中 first 成员表示目标顶点的索引，而 second 成员表示边的权重。
+        string description;//简介
+
+        Building(int _id, const string& _name, int x, int y, const string& _description)
+            : id(_id), name(_name), coordinates(make_pair(x, y)), description(_description) {}
+    };
+
+
+
+    // 图类，表示学校校园平面图
+    class CampusMap {
+    private:
+        int V; // 顶点的数量
+        vector<vector<pair<int, int>>> adjacencyList; // 邻接表，存储边的信息
+        vector<Building> buildings; // 存储主要建筑信息
+
+
+
+    public:
+        // 构造函数，初始化图
+        CampusMap(int _V) : V(_V), adjacencyList(_V), buildings() {}
+
+        // 添加无向边到邻接表
+        void addEdge(int v, int w, int length) {//两节点及长度
+            adjacencyList[v].emplace_back(w, length);
+            adjacencyList[w].emplace_back(v, length);
+        }
+
+
+
+        // 添加建筑信息
+        void addBuilding() {
+            int id;
+            string name1;
+            int x, y;
+            string description1;
+            cout << "请输入编号"<<endl;
+            cin >> id;
+            cout << "请输入建筑名" << endl;
+            cin >> name1;
+            cout << "请输入起点与终点" << endl;
+            cin >> x >> y;
+            cout << "请输入建筑简介" << endl;
+            cin >> description1;
+            Building newBuilding(id, name1, x, y, description1);
+            buildings.push_back(newBuilding);
+        }
+
+        void addBuilding(int id, const string& name, int x, int y, const string& description) {
+            Building newBuilding(id, name, x, y, description);
+            buildings.push_back(newBuilding);
+        }
+
+        // 打印邻接表
+        void printAdjList() {
+            cout << "邻接表：" << endl;
+            for (int i = 0; i < V; ++i) {
+                cout << "顶点 " << i << " 的邻居: ";
+                for (const auto& neighbor : adjacencyList[i]) {
+                    cout << neighbor.first << "(长度:" << neighbor.second << ") ";
+                }
+                cout << endl;
+            }
+        }
+
+        // 查找并输出建筑信息
+        void findBuilding(int id) {
+            auto it = find_if(buildings.begin(), buildings.end(), [id](const Building& building) {
+                return building.id == id;
+                });
+
+            if (it != buildings.end()) {
+                cout << "建筑信息：" << endl;
+                cout << "编号: " << it->id << endl;
+                cout << "名称: " << it->name << endl;
+                cout << "坐标: (" << it->coordinates.first << ", " << it->coordinates.second << ")" << endl;
+                cout << "简介: " << it->description << endl;
+            }
+            else {
+                cout << "未找到编号为" << id << "的建筑信息。" << endl;
+            }
+        }
+
+        // 按坐标次序给出建筑列表
+        void printBuildingsByCoordinates() {
+            cout << "按坐标次序给出建筑列表：" << endl;
+            //lambda 表达式
+            sort(buildings.begin(), buildings.end(), [](const Building& a, const Building& b) {
+                return a.coordinates.first < b.coordinates.first || (a.coordinates.first == b.coordinates.first && a.coordinates.second < b.coordinates.second);
+                });
+
+            for (const auto& building : buildings) {
+                cout << "编号: " << building.id << ", 名称: " << building.name
+                    << ", 坐标: (" << building.coordinates.first << ", " << building.coordinates.second << ")" << endl;
+            }
+        }
+
+        // Dijkstra算法找最短路径
+        void dijkstraShortestPath(int start) {//选起点
+            priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;//优先队列实现最小堆
+            vector<int> distance(V, INT_MAX);
+
+            distance[start] = 0;
+            pq.push(make_pair(0, start));
+
+            while (!pq.empty()) {
+                int u = pq.top().second;
+                pq.pop();
+
+                for (const auto& neighbor : adjacencyList[u]) {
+                    int v = neighbor.first;
+                    int weight = neighbor.second;
+
+                    if (distance[u] + weight < distance[v]) {
+                        distance[v] = distance[u] + weight;
+                        pq.push(make_pair(distance[v], v));
+                    }
+                }
+            }
+
+            cout << "计算机学院到各景点的最短路径：" << endl;
+            for (int i = 0; i < V; ++i) {
+                cout << "到达顶点 " << i << " 的最短路径长度为: " << distance[i] << endl;
+            }
+        }
+
+        // BFS找所有路径
+        void bfsAllPaths(int start, int end) {
+            queue<vector<int>> pathsQueue;
+            pathsQueue.push({ start });
+            vector<bool> visited(V, false);
+
+            while (!pathsQueue.empty()) {
+                vector<int> currentPath = pathsQueue.front();
+                pathsQueue.pop();
+                int lastNode = currentPath.back();
+
+                if (lastNode == end) {
+                    cout << "计算机学院到校医院的路径：" << endl;
+                    for (int node : currentPath) {
+                        cout << node << " ";
+                    }
+                    cout << endl;
+                }
+                else {
+                    if (!visited[lastNode]) {
+                        visited[lastNode] = true;
+                        for (const auto& neighbor : adjacencyList[lastNode]) {
+                            int nextNode = neighbor.first;
+                            if (!visited[nextNode]) {
+                                vector<int> newPath = currentPath;
+                                newPath.push_back(nextNode);
+                                pathsQueue.push(newPath);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 更新边的信息
+        void updateEdge(int v, int w, int newLength) {
+            // 查找顶点v的邻接列表中是否存在边(v, w)，并更新其权重
+            auto it = find_if(adjacencyList[v].begin(), adjacencyList[v].end(), [w](const pair<int, int>& edge) {
+                return edge.first == w;
+                });
+
+            // 如果找到了边(v, w)，则更新其权重为newLength
+            if (it != adjacencyList[v].end()) {
+                it->second = newLength;
+            }
+
+            // 查找顶点w的邻接列表中是否存在边(w, v)，并更新其权重
+            it = find_if(adjacencyList[w].begin(), adjacencyList[w].end(), [v](const pair<int, int>& edge) {
+                return edge.first == v;
+                });
+
+            // 如果找到了边(w, v)，则更新其权重为newLength
+            if (it != adjacencyList[w].end()) {
+                it->second = newLength;
+            }
+        }
+        // 删除边和建筑信息
+        void deleteEdgeAndBuilding(int buildingIndex) {
+            // 删除邻接列表中与给定建筑索引相关的边
+            adjacencyList.erase(adjacencyList.begin() + buildingIndex);
+            // 遍历邻接列表，删除与给定建筑索引相关的边
+            for (auto& edges : adjacencyList) {
+                // 使用 remove_if 移动与建筑索引相关的边到列表末尾
+                auto it = remove_if(edges.begin(), edges.end(), [buildingIndex](const pair<int, int>& edge) {
+                    return edge.first == buildingIndex;
+                    });
+                // 从列表中擦除移动到末尾的边
+                edges.erase(it, edges.end());
+            }
+            // 从建筑列表中删除与给定建筑索引对应的建筑信息
+            buildings.erase(buildings.begin() + buildingIndex);
+        }
+    };
+
+    int main() {
+        // 创建一个有8个顶点的图
+        CampusMap campusMap(8);
+
+        // 添加建筑信息
+        campusMap.addBuilding(0, "计算机学院", 0, 0, "计算机学院简介");
+        campusMap.addBuilding(1, "图书馆", 1, 1, "图书馆简介");
+        campusMap.addBuilding(2, "实验楼", 2, 2, "实验楼简介");
+        campusMap.addBuilding(3, "食堂", 3, 3, "食堂简介");
+        campusMap.addBuilding(4, "主楼", 4, 4, "主楼简介");
+        campusMap.addBuilding(5, "体育馆", 5, 5, "体育馆简介");
+        campusMap.addBuilding(6, "校医院", 6, 6, "校医院简介");
+        campusMap.addBuilding(7, "艺术楼", 7, 7, "艺术楼简介");
+        system("cls");
+
+        // 添加边到图中
+        campusMap.addEdge(0, 1, 3);
+        campusMap.addEdge(0, 2, 2);
+        campusMap.addEdge(1, 3, 4);
+        campusMap.addEdge(2, 4, 5);
+        campusMap.addEdge(3, 5, 6);
+        campusMap.addEdge(4, 6, 7);
+        campusMap.addEdge(5, 7, 8);
+        campusMap.addEdge(6, 7, 9);
+        system("cls");
+
+        // 打印逻辑结构和邻接表
+        campusMap.printAdjList();
+        system("cls");
+
+        // 查询建筑信息
+        campusMap.findBuilding(3);
+        system("cls");
+
+        // 按坐标次序给出建筑列表
+        campusMap.printBuildingsByCoordinates();
+        system("cls");
+
+        // Dijkstra算法找最短路径
+        campusMap.dijkstraShortestPath(0);
+        system("cls");
+
+        // BFS找所有路径
+        campusMap.bfsAllPaths(0, 6);
+        system("cls");
+
+        campusMap.addBuilding();
+        // 更新边的信息
+        campusMap.updateEdge(0, 1, 5);
+
+        // 打印更新后的邻接表
+        campusMap.printAdjList();
+
+        return 0;
+    }
